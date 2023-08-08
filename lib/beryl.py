@@ -66,12 +66,46 @@ class BerylServer:
     def get_pfs(self):
         return self.pfs
 
+    def add_pfs(self, pfs):
+        self.pfs.extend(pfs)
+
+    def perform(self):
+        # 如果self.pfs 不为空， 查询每个pf的vfs，如果vfs不为空，就创建vf
+        # 根据vfs的长度来创建vf的数量， 命令如下：echo 2 >  /sys/class/pci_bus/0000\:65/device/0000\:65\:00.0/sriov_numvfs
+        for pf in self.pfs:
+            vfs = pf.get_vfs()
+
+            # If there are VFs for this PF, create VFs based on the number of VFs
+            if vfs:
+                num_vfs = len(vfs)
+                sriov_numvfs_path = r"/sys/class/pci_bus/0000\:65/device/0000\:65\:00.0/sriov_numvfs"
+
+                print(f"echo {num_vfs} > {sriov_numvfs_path}")
+
 
 
 
 
 if __name__ == '__main__':
-    pf = PF('eth0')
+    pf0 = PF('eth0')
     vf = VF('eth0.1')
-    vf.set_pf_name(pf.if_name)
-    print( vf.get_pf_name())
+    pf0.add_vf(vf)
+    vf = VF('eth0.2')
+    pf0.add_vf(vf)
+    vf = VF('eth0.3')
+    pf0.add_vf(vf)
+
+    pf1 = PF('eth1')
+    vf = VF('eth1.1')
+    pf1.add_vf(vf)
+    vf = VF('eth1.2')
+    pf1.add_vf(vf)
+    vf = VF('eth1.3')
+    pf1.add_vf(vf)
+
+    server = BerylServer()
+    server.add_pf(pf0)
+    server.add_pf(pf1)
+
+    server.perform()
+
