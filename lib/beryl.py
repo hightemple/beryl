@@ -39,9 +39,13 @@ class PF:
 
 
 class VF:
-    def __init__(self, name):
+    def __init__(self, name, ip=None, netmask=24, mac=None, vlan=None):
         self.if_name = name
         self.pf_name = None
+        self.ip = ip
+        self.netmask = netmask
+        self.mac = mac
+        self.vlan = vlan
 
 
     def get_pf_name(self):
@@ -82,25 +86,33 @@ class BerylServer:
 
                 print(f"echo {num_vfs} > {sriov_numvfs_path}")
 
+            # ip link set dev p1p1_0 up
+            # ip addr add dev p1p1_0 6.6.6.2/24
+
+            for vf in vfs:
+                print(f"ip link set dev {vf.if_name} up")
+                print(f"ip addr add dev {vf.if_name} {vf.ip}/{vf.netmask}")
+
+
 
 
 
 
 if __name__ == '__main__':
     pf0 = PF('eth0')
-    vf = VF('eth0.1')
+    vf = VF('eth0.1',ip='1.1.1.1')
     pf0.add_vf(vf)
-    vf = VF('eth0.2')
+    vf = VF('eth0.2',ip='1.1.1.2')
     pf0.add_vf(vf)
-    vf = VF('eth0.3')
+    vf = VF('eth0.3',ip='1.1.1.3')
     pf0.add_vf(vf)
 
     pf1 = PF('eth1')
-    vf = VF('eth1.1')
+    vf = VF('eth1.1',ip='1.1.2.1')
     pf1.add_vf(vf)
-    vf = VF('eth1.2')
+    vf = VF('eth1.2',ip='1.1.2.1')
     pf1.add_vf(vf)
-    vf = VF('eth1.3')
+    vf = VF('eth1.3',ip='1.1.2.1')
     pf1.add_vf(vf)
 
     server = BerylServer()
