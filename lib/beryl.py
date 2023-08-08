@@ -1,12 +1,21 @@
-class VF:
+class NetDev:
+    def __init__(self, ip, netmask=24, mac=None):
+
+        self.ip = None
+        self.netmask = None
+        self.mac = None
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return f"NetDev({self.name}:{self.ip}/{self.netmask})"
+
+class VF(NetDev):
     def __init__(self, name, ip=None, netmask=24, mac=None, vlan=None):
+        super().__init__(ip, netmask, mac)
         self.pf = None
         self.if_name = name
-
-        self.ip = ip
-        self.netmask = netmask
-        self.mac = mac
-        self.vlan = vlan
 
     def __str__(self):
         return f"VF({self.if_name}:{self.ip}/{self.netmask}:{self.pf})"
@@ -17,19 +26,23 @@ class VF:
     def get_pf_name(self):
         return self.pf.if_name
 
+    def get_server(self):
+        return self.pf.server
+
 
 # 创建一个PF类
-class PF:
-    def __init__(self, name):
+class PF(NetDev):
+    def __init__(self, name, ip=None, netmask=24, mac=None):
+        super().__init__(ip, netmask, mac)
         self.if_name = name
         self.server = None
         self.vfs = []
 
     def __str__(self):
-        return f"PF({self.if_name}:{len(self.vfs)}VFs)"
+        return self.__repr__()
 
     def __repr__(self):
-        self.__str__()
+        return f"PF({self.if_name}:{len(self.vfs)}VFs)"
 
     def add_vf(self, vf: VF):
         vf.pf = self
@@ -63,7 +76,6 @@ class PF:
             if vf.if_name == name:
                 return index
         return None
-        return None
 
     def get_vf_index_by_vf(self, vf):
         for index, v in enumerate(self.vfs):
@@ -71,7 +83,8 @@ class PF:
                 return index
         return None
 
-
+    def get_server(self):
+        return self.server
 
 class Bond:
     def __init__(self, mode, ports):
