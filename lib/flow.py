@@ -13,7 +13,7 @@ def create_flow(c_device, s_device):
     return flow
 
 class Flow:
-    def __init__(self, packet_size, interval=1, type='udp', duration=10, c_device=None, s_device=None):
+    def __init__(self, c_device, s_device,packet_size=64, interval=1, type='udp', duration=10):
         self.packet_size = packet_size
 
         self.interval = interval

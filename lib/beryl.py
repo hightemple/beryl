@@ -1,9 +1,9 @@
 class NetDev:
-    def __init__(self, ip, netmask=24, mac=None):
+    def __init__(self, ip, netmask, mac):
 
-        self.ip = None
-        self.netmask = None
-        self.mac = None
+        self.ip = ip
+        self.netmask = netmask
+        self.mac = mac
 
     def __str__(self):
         return self.__repr__()
@@ -48,6 +48,11 @@ class PF(NetDev):
         vf.pf = self
         self.vfs.append(vf)
 
+    def add_vfs(self, vfs):
+        for vf in vfs:
+            self.add_vf(vf)
+
+
     def remove_all_vfs(self):
         for vf in self.vfs:
             vf.pf = None
@@ -85,6 +90,8 @@ class PF(NetDev):
 
     def get_server(self):
         return self.server
+
+
 
 class Bond:
     def __init__(self, mode, ports):
@@ -146,15 +153,13 @@ class BerylServer(SSHable):
                 num_vfs = len(vfs)
 
                 self.run_cmd(f"echo {num_vfs} > {sriov_numvfs_path}")
-            else:
-                self.run_cmd(f"echo 0 > {sriov_numvfs_path}")
 
-            # ip link set dev p1p1_0 up
-            # ip addr add dev p1p1_0 6.6.6.2/24
+                # ip link set dev p1p1_0 up
+                # ip addr add dev p1p1_0 6.6.6.2/24
 
-            for vf in vfs:
-                self.run_cmd(f"ip link set dev {vf.if_name} up")
-                self.run_cmd(f"ip addr add dev {vf.if_name} {vf.ip}/{vf.netmask}")
+                for vf in vfs:
+                    self.run_cmd(f"ip link set dev {vf.if_name} up")
+                    self.run_cmd(f"ip addr add dev {vf.if_name} {vf.ip}/{vf.netmask}")
 
     def reset(self):
         for pf in self.pfs:
