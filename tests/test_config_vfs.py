@@ -43,18 +43,23 @@ def test_add_512vfs():
 
     server.perform()
 
-def test_get_pfs():
+def test_get_vfs():
     pf0 = PF('p1p1')
+    all_vfs = []
+
     for i in range(4):
         vf = VF(f'p1p1_{i}', ip=f'1.1.1.{i}')
         pf0.add_vf(vf)
+        all_vfs.append(vf)
 
     pf1 = PF('p2p1')
     for i in range(4):
         vf = VF(f'p2p1_{i}', ip=f'1.1.2.{i}')
         pf1.add_vf(vf)
+        all_vfs.append(vf)
 
     server = BerylServer()
+    server.connect()
     server.add_pf(pf0)
     server.add_pf(pf1)
     server.perform()
@@ -63,6 +68,17 @@ def test_get_pfs():
     for pf in pfs:
         print(pf)
         print(pf.get_vfs())
+
+    for vf in all_vfs:
+        print(vf)
+
+    server.reset()
+
+    for vf in all_vfs:
+        print(vf)
+
+
+    server.disconnect()
 
 def test_change_vfs():
     pf0 = PF('p1p1')

@@ -2,15 +2,20 @@ class VF:
     def __init__(self, name, ip=None, netmask=24, mac=None, vlan=None):
         self.pf = None
         self.if_name = name
-        self.pf_name = None
+
         self.ip = ip
         self.netmask = netmask
         self.mac = mac
         self.vlan = vlan
 
+    def __str__(self):
+        return f"VF({self.if_name}:{self.ip}/{self.netmask}:{self.pf})"
+
+    def __repr__(self):
+        return self.__str__()
 
     def get_pf_name(self):
-        return self.pf_name
+        return self.pf.if_name
 
 
 # 创建一个PF类
@@ -21,14 +26,19 @@ class PF:
         self.vfs = []
 
     def __str__(self):
-        return f"PF: {self.if_name} with {len(self.vfs)} VFs"
+        return f"PF({self.if_name}:{len(self.vfs)}VFs)"
 
     def __repr__(self):
-        return f"PF({self.if_name}:{len(self.vfs)}VFs)"
+        self.__str__()
 
     def add_vf(self, vf: VF):
         vf.pf = self
         self.vfs.append(vf)
+
+    def remove_all_vfs(self):
+        for vf in self.vfs:
+            vf.pf = None
+        self.vfs = []
 
 
     def get_vfs(self):
@@ -132,6 +142,11 @@ class BerylServer(SSHable):
             for vf in vfs:
                 self.run_cmd(f"ip link set dev {vf.if_name} up")
                 self.run_cmd(f"ip addr add dev {vf.if_name} {vf.ip}/{vf.netmask}")
+
+    def reset(self):
+        for pf in self.pfs:
+            pf.remove_all_vfs()
+        self.perform()
 
 
 
