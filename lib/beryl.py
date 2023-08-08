@@ -1,7 +1,23 @@
+class VF:
+    def __init__(self, name, ip=None, netmask=24, mac=None, vlan=None):
+        self.pf = None
+        self.if_name = name
+        self.pf_name = None
+        self.ip = ip
+        self.netmask = netmask
+        self.mac = mac
+        self.vlan = vlan
+
+
+    def get_pf_name(self):
+        return self.pf_name
+
+
 # 创建一个PF类
 class PF:
     def __init__(self, name):
         self.if_name = name
+        self.server = None
         self.vfs = []
 
     def __str__(self):
@@ -10,8 +26,10 @@ class PF:
     def __repr__(self):
         return f"PF({self.if_name}:{len(self.vfs)}VFs)"
 
-    def add_vf(self, vf):
+    def add_vf(self, vf: VF):
+        vf.pf = self
         self.vfs.append(vf)
+
 
     def get_vfs(self):
         return self.vfs
@@ -44,26 +62,31 @@ class PF:
         return None
 
 
-class VF:
-    def __init__(self, name, ip=None, netmask=24, mac=None, vlan=None):
-        self.if_name = name
-        self.pf_name = None
-        self.ip = ip
-        self.netmask = netmask
-        self.mac = mac
-        self.vlan = vlan
-
-
-    def get_pf_name(self):
-        return self.pf_name
 
 class Bond:
     def __init__(self, mode, ports):
         self.mode = mode
         self.ports = ports
 
-class BerylServer:
-    def __init__(self):
+class SSHable:
+    def __init__(self, ip, username, password):
+        self.ip = ip
+        self.username = username
+        self.password = password
+
+    def connect(self):
+        print("connect to server")
+
+    def disconnect(self):
+        print("disconnect to server")
+
+    def run_cmd(self, cmd):
+        print(f"[{self.ip}] SEND: {cmd} ")
+
+
+class BerylServer(SSHable):
+    def __init__(self, ip='10.211.3.223', username='root', password='root123'):
+        super().__init__(ip, username, password)
         self.pfs = []
         self.bond = None
 
@@ -76,8 +99,13 @@ class BerylServer:
     def get_pfs(self):
         return self.pfs
 
+    def add_pf(self, pf: PF):
+        self.pfs.append(pf)
+        pf.server = self
+
     def add_pfs(self, pfs):
-        self.pfs.extend(pfs)
+        for pf in pfs:
+            self.pfs.append(pf)
 
     def get_pfs(self):
         return self.pfs
@@ -94,16 +122,16 @@ class BerylServer:
             if vfs:
                 num_vfs = len(vfs)
 
-                print(f"echo {num_vfs} > {sriov_numvfs_path}")
+                self.run_cmd(f"echo {num_vfs} > {sriov_numvfs_path}")
             else:
-                print(f"echo 0 > {sriov_numvfs_path}")
+                self.run_cmd(f"echo 0 > {sriov_numvfs_path}")
 
             # ip link set dev p1p1_0 up
             # ip addr add dev p1p1_0 6.6.6.2/24
 
             for vf in vfs:
-                print(f"ip link set dev {vf.if_name} up")
-                print(f"ip addr add dev {vf.if_name} {vf.ip}/{vf.netmask}")
+                self.run_cmd(f"ip link set dev {vf.if_name} up")
+                self.run_cmd(f"ip addr add dev {vf.if_name} {vf.ip}/{vf.netmask}")
 
 
 

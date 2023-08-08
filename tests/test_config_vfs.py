@@ -62,6 +62,8 @@ def test_get_pfs():
     print(pfs)
     for pf in pfs:
         print(pf)
+        print(pf.get_vfs())
+
 def test_change_vfs():
     pf0 = PF('p1p1')
     for i in range(4):
@@ -74,8 +76,13 @@ def test_change_vfs():
         pf1.add_vf(vf)
 
     server = BerylServer()
+    server.connect()
+
+
     server.add_pf(pf0)
     server.add_pf(pf1)
 
     server.perform()
+
+    server.disconnect()
 
