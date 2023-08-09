@@ -63,12 +63,12 @@ def test_m2m_flows_between_vfs():
 
 
 def test_m2m_random_flows_between_vfs():
-    vf_num = 4
+    vf_num = 10
     s_pf0 = PF('p1p1')
-    s_pf0.add_vfs_by_num(vf_num)
+    s_pf0.add_vfs_by_num(vf_num, ip_start='1.1.1.1')
 
     c_pf0 = PF('p1p1')
-    c_pf0.add_vfs_by_num(vf_num)
+    c_pf0.add_vfs_by_num(vf_num, ip_start='1.1.1.101')
 
     server1 = BerylServer(ip='10.211.3.223')
     server1.add_pf(s_pf0)
