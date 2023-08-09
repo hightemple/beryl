@@ -146,12 +146,6 @@ class BerylServer(SSHable):
         self.pfs = []
         self.bonds = []
 
-    def add_pf(self, pf: PF):
-        self.pfs.append(pf)
-
-    def set_bond(self, bond: Bond):
-        self.bond = bond
-
     def get_pfs(self):
         return self.pfs
 
@@ -162,9 +156,6 @@ class BerylServer(SSHable):
     def add_pfs(self, pfs):
         for pf in pfs:
             self.pfs.append(pf)
-
-    def get_pfs(self):
-        return self.pfs
 
 
     def perform(self):
