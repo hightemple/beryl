@@ -1,9 +1,10 @@
 class NetDev:
-    def __init__(self, ip, netmask, mac):
+    def __init__(self, if_name, ip, netmask, mac):
 
         self.ip = ip
         self.netmask = netmask
         self.mac = mac
+        self.if_name = if_name
 
     def __str__(self):
         return self.__repr__()
@@ -13,9 +14,8 @@ class NetDev:
 
 class VF(NetDev):
     def __init__(self, name, ip=None, netmask=24, mac=None, vlan=None):
-        super().__init__(ip, netmask, mac)
+        super().__init__(name, ip, netmask, mac)
         self.pf = None
-        self.if_name = name
 
     def __str__(self):
         return f"VF({self.if_name}:{self.ip}/{self.netmask}:{self.mac}:{self.pf})"
@@ -33,8 +33,7 @@ class VF(NetDev):
 # 创建一个PF类
 class PF(NetDev):
     def __init__(self, name, ip=None, netmask=24, mac=None):
-        super().__init__(ip, netmask, mac)
-        self.if_name = name
+        super().__init__(name, ip, netmask, mac)
         self.server = None
         self.vfs = []
 
@@ -100,9 +99,20 @@ class PF(NetDev):
 
 
 class Bond:
-    def __init__(self, mode, ports):
+    def __init__(self, name, net_devs:NetDev, mode='4', ):
+        self.name = name
         self.mode = mode
-        self.ports = ports
+        self.net_devs = net_devs
+        self.primary = None
+        self.xmit_hash_policy = None
+
+    def set_primary(self, primary:NetDev):
+        self.primary = primary
+
+    def set_xmit_hash_policy(self, hash_policy:str):
+        self.xmit_hash_policy = hash_policy
+
+
 
 class SSHable:
     def __init__(self, ip, username, password):
@@ -124,7 +134,7 @@ class BerylServer(SSHable):
     def __init__(self, ip='10.211.3.223', username='root', password='root123'):
         super().__init__(ip, username, password)
         self.pfs = []
-        self.bond = None
+        self.bonds = []
 
     def add_pf(self, pf: PF):
         self.pfs.append(pf)
@@ -150,6 +160,11 @@ class BerylServer(SSHable):
     def perform(self):
         # 如果self.pfs 不为空， 查询每个pf的vfs，如果vfs不为空，就创建vf
         # 根据vfs的长度来创建vf的数量， 命令如下：echo 2 >  /sys/class/pci_bus/0000\:65/device/0000\:65\:00.0/sriov_numvfs
+        self.__apply_pfs_vfs()
+
+        self.__apply_bonds()
+
+    def __apply_pfs_vfs(self):
         sriov_numvfs_path = r"/sys/class/pci_bus/0000\:65/device/0000\:65\:00.0/sriov_numvfs"
         for pf in self.pfs:
             vfs = pf.get_vfs()
@@ -167,13 +182,34 @@ class BerylServer(SSHable):
                     self.run_cmd(f"ip link set dev {vf.if_name} up")
                     self.run_cmd(f"ip addr add dev {vf.if_name} {vf.ip}/{vf.netmask}")
 
+    def __apply_bonds(self):
+        for bond in self.bonds:
+            self.run_cmd(f"ip link set dev {bond.name} up")
+            for dev in bond.net_devs:
+                self.run_cmd(f"ip link set dev {dev.if_name} up")
+
+
+            if bond.mode == '4':
+                if bond.xmit_hash_policy :
+                    self.run_cmd(f"ip link add {bond.name} mode {bond.mode}")
+                    self.run_cmd(f"ip link set {bond.name} type bond xmit_hash_policy policy {bond.xmit_hash_policy}")
+
+            elif bond.mode == 'active-backup':
+                self.run_cmd(f"ip link add {bond.name} mode {bond.mode}")
+                if bond.primary:
+                    self.run_cmd(f"ip link set {bond.name} type bond primary {bond.primary.if_name}")
+
     def reset(self):
         for pf in self.pfs:
             pf.remove_all_vfs()
         self.perform()
 
+    def add_bond(self, bond: Bond):
+        self.bonds.append(bond)
 
-
+    def add_bonds(self, bonds):
+        for bond in bonds:
+            self.bonds.append(bond)
 
 
 
