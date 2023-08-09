@@ -99,10 +99,12 @@ class PF(NetDev):
 
 
 class Bond:
-    def __init__(self, name, net_devs:NetDev, mode='4', ):
+    def __init__(self, name, net_devs:NetDev, ip, netmask=24, mode='4'):
         self.name = name
         self.mode = mode
         self.net_devs = net_devs
+        self.ip = ip
+        self.netmask = netmask
         self.primary = None
         self.xmit_hash_policy = None
 
@@ -187,6 +189,7 @@ class BerylServer(SSHable):
             self.run_cmd(f"ip link set dev {bond.name} up")
             for dev in bond.net_devs:
                 self.run_cmd(f"ip link set dev {dev.if_name} up")
+            self.run_cmd(f"ip addr add dev {bond.name} {bond.ip}/{bond.netmask}")
 
 
             if bond.mode == '4':
