@@ -9,13 +9,14 @@ import time
 # 3. flow使用iperf3进行测试
 # 4. flow可以根据pf或vf对象所包含的信息来给出iperf3的命令
 
+# 创建一对一的流，流的数量默认为1
 def create_p2p_flows(c_device, s_device, flow_num = 1):
     flows = Flows()
     for i in range(flow_num):
         flows.add_flow(Flow(c_device, s_device))
     return flows
 
-# 创建多对多的流
+# 创建多对多的流，每个设备对之间的流的数量默认为1
 def create_m2m_flows(c_devices, s_devices, flow_num = 1):
     flows = Flows()
     for c_device, s_device in zip(c_devices, s_devices):
