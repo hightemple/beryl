@@ -1,3 +1,4 @@
+import random
 class NetDev:
     def __init__(self, if_name, ip, netmask, mac):
 
@@ -66,6 +67,13 @@ class PF(NetDev):
 
     def get_vfs(self):
         return self.vfs
+
+    def get_random_vfs(self , vf_num):
+        #从所有的vf中随机选择vf_num个vf
+        if vf_num > len(self.vfs):
+            raise ValueError("vf_num is bigger than the number of vfs")
+
+        return random.sample(self.vfs , vf_num)
 
     def get_if_name(self):
         return self.if_name
