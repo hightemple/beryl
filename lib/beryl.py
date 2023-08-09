@@ -18,7 +18,7 @@ class VF(NetDev):
         self.if_name = name
 
     def __str__(self):
-        return f"VF({self.if_name}:{self.ip}/{self.netmask}:{self.pf})"
+        return f"VF({self.if_name}:{self.ip}/{self.netmask}:{self.mac}:{self.pf})"
 
     def __repr__(self):
         return self.__str__()
@@ -51,6 +51,12 @@ class PF(NetDev):
     def add_vfs(self, vfs):
         for vf in vfs:
             self.add_vf(vf)
+
+    def add_vfs_by_num(self, vf_num, ip_start='1.1.1.1', netmask=24, mac_start='00:00:00:00:00:01'):
+        for i in range(vf_num):
+            # 希望vf的ip地址是连续的，所以ip地址的最后一位要加1, mac地址也是一样,并且mac地址必须符合规范
+            self.add_vf(VF(f'{self.if_name}_{i}', ip=f'{ip_start[:-1]}{int(ip_start[-1])+i}', netmask=netmask,
+                           mac=f'{mac_start[:-2]}{i+int(mac_start[-2]):02x}'))
 
 
     def remove_all_vfs(self):
