@@ -13,7 +13,7 @@ import time
 def create_p2p_flows(c_device, s_device, flow_num = 1):
     flows = Flows()
     for i in range(flow_num):
-        flows.add_flow(Flow(c_device, s_device))
+        flows.add_flow(Flow(c_device, s_device, port=10000+i))
     return flows
 
 # 创建多对多的流，每个设备对之间的流的数量默认为1
@@ -22,10 +22,14 @@ def create_m2m_flows(c_devices, s_devices, flow_num = 1):
     for c_device, s_device in zip(c_devices, s_devices):
         for i in range(flow_num):
             flows.add_flow(Flow(c_device, s_device))
+
+    # 为每个流设置端口号
+    for i, flow in enumerate(flows):
+        flow.set_port(10000+i)
     return flows
 
 class Flow:
-    def __init__(self, c_device, s_device,packet_size=64, interval=1, type='udp', duration=2):
+    def __init__(self, c_device, s_device,packet_size=64, interval=1, type='udp', duration=2, port=None):
         self.packet_size = packet_size
 
         self.interval = interval
@@ -34,17 +38,22 @@ class Flow:
         self.c_device = c_device
         self.s_device = s_device
         self.log = None
+        self.port = port
+    def set_port(self, port):
+        self.port = port
 
     def start(self):
 
         # 生成一个随机的端口号
-        port = random.randint(1024, 65535)
+        if self.port is None:
+            port = random.randint(1024, 65535)
 
         # 生成在tmp下的文件，文件名为flow_时间戳, 时间戳转换为上海时间，且精确到毫秒
         self.log = f'/tmp/flow_{time.strftime(f"%Y%m%d_%H%M%S_{port}", time.localtime())}.log'
 
         c_iperf_cmd = f'nohup iperf3 -c {self.s_device.ip} -u -B {self.c_device.ip} -l {self.packet_size} -i {self.interval} -t {self.duration} -p {port} > {self.log} 2>&1 &'
-        s_iperf_cmd = f'nohup iperf3 -s -u -B {self.s_device.ip} -l {self.packet_size} -i {self.interval} -t {self.duration} -p {port} > {self.log} 2>&1 &'
+        # -1, --one-off             handle one client connection then exit
+        s_iperf_cmd = f'nohup iperf3 -s -u -B {self.s_device.ip} -l {self.packet_size} -i {self.interval} -t {self.duration} -p {port}  -1 > {self.log} 2>&1 &'
 
         c_server = self.c_device.get_server()
         s_server = self.s_device.get_server()
