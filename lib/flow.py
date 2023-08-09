@@ -67,12 +67,19 @@ class Flows:
     def add_flow(self, flow):
         self.flows.append(flow)
 
-    def start(self):
-        threads = []
-        for flow in self.flows:
-            thread = threading.Thread(target=flow.start)
-            threads.append(thread)
-            thread.start()
+    def start(self, parallel = True):
+        if parallel:
+            threads = []
+            for flow in self.flows:
+                thread = threading.Thread(target=flow.start)
+                threads.append(thread)
+                thread.start()
 
-        for thread in threads:
-            thread.join()
+            for thread in threads:
+                thread.join()
+        else:
+            for flow in self.flows:
+                flow.start()
+    def parse_result(self):
+        for flow in self.flows:
+            flow.parse_result()

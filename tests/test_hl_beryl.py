@@ -1,5 +1,6 @@
 from lib.beryl import *
 from lib.flow import create_m2m_flows
+import time
 
 
 def test_add_some_vfs_2_pf():
@@ -21,12 +22,13 @@ def test_add_some_vfs_2_pf():
     server1.disconnect()
 
 
-def test_m2m_flows_between_2_pf():
+def test_m2m_flows_between_vfs():
+    vf_num = 4
     s_pf0 = PF('p1p1')
-    s_pf0.add_vfs_by_num(10)
+    s_pf0.add_vfs_by_num(vf_num)
 
     c_pf0 = PF('p1p1')
-    c_pf0.add_vfs_by_num(10)
+    c_pf0.add_vfs_by_num(vf_num)
 
     server1 = BerylServer(ip='10.211.3.223')
     server1.add_pf(s_pf0)
@@ -42,7 +44,20 @@ def test_m2m_flows_between_2_pf():
 
 
     flows = create_m2m_flows(c_pf0.get_vfs(), s_pf0.get_vfs())
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    print('start test parallel')
+    # 打印当前的时间
+
     flows.start()
+    print('end test parallel')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
+    print('start test one by one')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    flows.start(parallel=False)
+    print('end test one by one')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
     for serv in [server1,server2]:
         serv.disconnect()
+
