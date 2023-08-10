@@ -47,6 +47,8 @@ class Flow:
         # 生成一个随机的端口号
         if self.port is None:
             port = random.randint(1024, 65535)
+        else:
+            port = self.port
 
         # 生成在tmp下的文件，文件名为flow_时间戳, 时间戳转换为上海时间，且精确到毫秒
         self.log = f'/tmp/flow_{time.strftime(f"%Y%m%d_%H%M%S_{port}", time.localtime())}.log'
@@ -73,6 +75,9 @@ class Flow:
 class Flows:
     def __init__(self):
         self.flows = []
+
+    def __iter__(self):
+        return iter(self.flows)  # 返回迭代器，用于迭代flows列表
 
     def add_flow(self, flow):
         self.flows.append(flow)
