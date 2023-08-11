@@ -11,7 +11,7 @@ class NetDev:
         return self.__repr__()
 
     def __repr__(self):
-        return f"NetDev({self.name}:{self.ip}/{self.netmask})"
+        return f"NetDev({self.if_name}:{self.ip}/{self.netmask})"
 
 class VF(NetDev):
     def __init__(self, name, ip=None, netmask=24, mac=None, vlan=None):
@@ -36,13 +36,14 @@ class PF(NetDev):
     def __init__(self, name, ip=None, netmask=24, mac=None):
         super().__init__(name, ip, netmask, mac)
         self.server = None
+        self.card = None
         self.vfs = []
 
     def __str__(self):
         return self.__repr__()
 
     def __repr__(self):
-        return f"PF({self.if_name}:{len(self.vfs)}VFs)"
+        return f"PF({self.if_name}:{self.card}:{self.server}:{len(self.vfs)}VFs)"
 
     def add_vf(self, vf: VF):
         vf.pf = self
@@ -105,6 +106,40 @@ class PF(NetDev):
         return self.server
 
 
+class Card:
+    def __init__(self, name, pfs:[PF]):
+        self.name = name
+        self.server = None
+        self.pfs = pfs
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return f"PF({self.name}:{self.server}:{len(self.pfs)}PFs)"
+
+    def add_pf(self, pf:PF):
+        self.pfs.append(pf)
+
+    def add_pfs(self, pfs):
+        for pf in pfs:
+            self.add_pf(pf)
+
+    def get_pfs(self):
+        return self.pfs
+
+    def get_pf_by_name(self, name):
+        for pf in self.pfs:
+            if pf.if_name == name:
+                return pf
+        return None
+
+    def get_pf_by_index(self, index):
+        if index < len(self.pfs):
+            return self.pfs[index]
+        return None
+
+
 
 class Bond:
     def __init__(self, name, net_devs:NetDev, ip, netmask=24, mode='4'):
@@ -143,19 +178,47 @@ class SSHable:
 class BerylServer(SSHable):
     def __init__(self, ip='10.211.3.223', username='root', password='root123'):
         super().__init__(ip, username, password)
+        self.cards = []
         self.pfs = []
         self.bonds = []
 
-    def get_pfs(self):
-        return self.pfs
+    def __str__(self):
+        return self.__repr__()
 
-    def add_pf(self, pf: PF):
-        self.pfs.append(pf)
-        pf.server = self
+    def __repr__(self):
+        return f"PF({self.ip}:{len(self.cards)}Cards{len(self.pfs)}PFs)"
 
-    def add_pfs(self, pfs):
+
+    def add_card(self, card: Card):
+        self.cards.append(card)
+        card.server = self
+
+        for pf in card.get_pfs():
+            self.pfs.append(pf)
+
+    def add_cards(self, cards:[Card]):
+        for card in cards:
+            self.cards.append(card)
+
+    def get_cards(self):
+        return self.cards
+
+    def add_pf(self, pf: PF, card=None):
+        if card is None:
+            card = Card('card0', [pf])
+
+        card.add_pf(pf)
+        self.add_card(card)
+
+
+
+
+    def add_pfs(self, pfs: [PF]):
         for pf in pfs:
             self.pfs.append(pf)
+
+    def get_pfs(self):
+        return self.pfs
 
 
     def perform(self):
