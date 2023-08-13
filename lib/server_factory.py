@@ -1,5 +1,5 @@
 import munch, yaml
-
+from lib.beryl import BerylServer, Card, PF, VF
 
 def load_yaml_topo(yaml_file):
     """This function is to load YAML file as an object

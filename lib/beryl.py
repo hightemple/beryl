@@ -28,14 +28,17 @@ class VF(NetDev):
         return self.pf.if_name
 
     def get_server(self):
-        return self.pf.server
+        if self.pf:
+            if self.pf.card:
+                if self.pf.card.server:
+                    return self.pf.card.server
+        return None
 
 
 # 创建一个PF类
 class PF(NetDev):
     def __init__(self, if_name, ip=None, netmask=24, mac=None):
         super().__init__(if_name, ip, netmask, mac)
-        self.server = None
         self.card = None
         self.vfs = []
 
@@ -105,8 +108,9 @@ class PF(NetDev):
         return None
 
     def get_server(self):
-        return self.server
-
+        if self.card:
+            return self.card.server
+        return None
 
 class Card:
     def __init__(self, name, pfs=[]):
@@ -220,8 +224,6 @@ class BerylServer(SSHable):
 
         card.add_pf(pf)
         self.add_card(card)
-
-
 
 
     def add_pfs(self, pfs: [PF]):
