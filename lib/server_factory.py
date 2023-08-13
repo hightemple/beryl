@@ -19,18 +19,6 @@ def load_yaml_topo(yaml_file):
     return yaml_obj
 
 
-def create_standard_server(card_num=1, pfs_per_card=2, vfs_per_pf=4):
-    server = BerylServer()
-    for card_index in range(card_num):
-        card = Card(f'card{card_index}')
-        for pf_index in range(pfs_per_card):
-            pf = PF(f'p2p_{pf_index + 1}')
-            for vf_index in range(vfs_per_pf):
-                vf = VF(f'p2p_{pf_index + 1}_{vf_index}')
-                pf.add_vf(vf)
-            card.add_pf(pf)
-        server.add_card(card)
-    return server
 
 
 def create_server_by_config(conf: munch.Munch):
@@ -39,30 +27,41 @@ def create_server_by_config(conf: munch.Munch):
       ip: 10.211.3.223
       user: root
       password: 123456
-      cards:
-        num: 1
+      cards: ['card1']
+      card1:
+        name: mc50_1
         type: 25G
-      pfs:
-        pfs_per_card: 2
-        intf_start: p2p1
-        ip_start: 1.1.1.1
-        netmask: 24
-        mac_start: 00:00:00:00:00:01
-      vfs:
-        vfs_per_pf: 2
-        ip_start: 6.6.6.1
-        netmask: 24
-        mac_start: 01:11:00:00:00:01
+        pfs: ['pf1', 'pf2']
+        pf1:
+          if_name: p2p1
+          ip: 1.1.1.1
+          netmask: 24
+          mac: 00:00:00:00:00:11
+          vfs:
+            vfs_per_pf: 2
+            ip_start: 6.6.6.1
+            netmask: 24
+            mac_start: 01:11:00:00:00:01
+        pf2:
+          if_name: p2p1
+          ip: 1.1.2.1
+          netmask: 24
+          mac: 00:00:00:00:00:21
+          vfs:
+            vfs_per_pf: 2
+            ip_start: 6.6.6.11
+            netmask: 24
+            mac_start: 01:11:00:00:00:11
 
     '''
     server = BerylServer(conf.ip, conf.user, conf.password)
-    for card_index in range(conf.cards.num):
-        card = Card(f'card{card_index}')
-        card.add_pfs_by_num(conf.pfs.pfs_per_card, conf.pfs.intf_start, conf.pfs.ip_start, conf.pfs.netmask,
-                            conf.pfs.mac_start)
-
-        for pf in card.get_pfs():
-            pf.add_vfs_by_num(conf.vfs.vfs_per_pf, conf.vfs.ip_start, conf.vfs.netmask, conf.vfs.mac_start)
+    for card_name in conf.cards:
+        card_conf = conf[card_name]
+        card = Card(card_name, card_conf.type)
+        for pf_name in card_conf.pfs:
+            pf_conf = card_conf[pf_name]
+            pf = PF(pf_conf.if_name, pf_conf.ip, pf_conf.netmask, pf_conf.mac)
+            pf.add_vfs_by_num(pf_conf.vfs.vfs_per_pf, pf_conf.vfs.ip_start, pf_conf.vfs.netmask, pf_conf.vfs.mac_start)
+            card.add_pf(pf)
         server.add_card(card)
-
     return server

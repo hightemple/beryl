@@ -2,18 +2,60 @@ server_conf1:
   ip: 10.211.3.223
   user: root
   password: 123456
-  cards:
-    num: 1
+  cards: ['card1']
+  card1:
+    name: mc50_1
     type: 25G
-  pfs:
-    pfs_per_card: 2
-    intf_start: p2p1
-    ip_start: 1.1.1.1
-    netmask: 24
-    mac_start: 00:00:00:00:00:01
-  vfs:
-    vfs_per_pf: 2
-    ip_start: 6.6.6.1
-    netmask: 24
-    mac_start: 01:11:00:00:00:01
-    
+    pfs: ['pf1', 'pf2']
+    pf1:
+      if_name: p2p1
+      ip: 1.1.1.1
+      netmask: 24
+      mac: 00:00:00:00:00:11
+      vfs:
+        vfs_per_pf: 2
+        ip_start: 6.6.6.1
+        netmask: 24
+        mac_start: 01:11:00:00:00:01
+    pf2:
+      if_name: p2p1
+      ip: 1.1.2.1
+      netmask: 24
+      mac: 00:00:00:00:00:21
+      vfs:
+        vfs_per_pf: 2
+        ip_start: 6.6.6.11
+        netmask: 24
+        mac_start: 01:11:00:00:00:11
+
+
+server_conf2:
+  ip: 10.211.3.224
+  user: root
+  password: 123456
+  cards: ['card1']
+  card1:
+    name: mc50_1
+    type: 25G
+    pfs: ['pf1', 'pf2']
+    pf1:
+      if_name: p2p1
+      ip: 1.1.1.2
+      netmask: 24
+      mac: 00:00:00:00:22:11
+      vfs:
+        vfs_per_pf: 2
+        ip_start: 6.6.6.101
+        netmask: 24
+        mac_start: 01:11:00:00:22:01
+    pf2:
+      if_name: p2p1
+      ip: 1.1.2.2
+      netmask: 24
+      mac: 00:00:00:00:22:21
+      vfs:
+        vfs_per_pf: 2
+        ip_start: 6.6.6.111
+        netmask: 24
+        mac_start: 01:11:00:00:22:11
+

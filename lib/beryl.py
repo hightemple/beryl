@@ -113,8 +113,9 @@ class PF(NetDev):
         return None
 
 class Card:
-    def __init__(self, name, pfs=[]):
+    def __init__(self, name, type='mc50',pfs=[]):
         self.name = name
+        self.type = type
         self.server = None
         self.pfs = pfs
 

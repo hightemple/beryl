@@ -106,20 +106,6 @@ def test_m2m_random_flows_between_vfs():
         serv.disconnect()
 
 
-def test_create_server():
-    server = create_standard_server(1, 2, 4)
-    server.connect()
-    server.perform()
-    server.disconnect()
-
-    print(server)
-
-    for card in server.cards:
-        print(card)
-        for pf in card.pfs:
-            print(pf)
-            for vf in pf.vfs:
-                print(vf)
 
 
 def test_load_yaml():
@@ -138,3 +124,26 @@ def test_create_server_from_yaml():
             print(pf)
             for vf in pf.vfs:
                 print(vf)
+
+def test_hl_flow_inner_node():
+    topo = load_yaml_topo('./topo.yaml')
+    server = create_server_by_config(topo.server_conf1)
+    server.connect()
+    server.perform()
+    flows = create_m2m_flows(server.cards[0].pfs[0].vfs, server.cards[0].pfs[1].vfs)
+    flows.start()
+
+    server.disconnect()
+
+def test_hl_flow_cross_node():
+    topo = load_yaml_topo('./topo.yaml')
+    server1 = create_server_by_config(topo.server_conf1)
+    server2 = create_server_by_config(topo.server_conf2)
+    for server in [server1, server2]:
+        server.connect()
+        server.perform()
+
+    flows = create_m2m_flows(server1.cards[0].pfs[0].vfs, server2.cards[0].pfs[1].vfs)
+    flows.start(parallel=False)
+
+    server.disconnect()
