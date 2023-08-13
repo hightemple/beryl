@@ -14,12 +14,12 @@ class NetDev:
         return f"NetDev({self.if_name}:{self.ip}/{self.netmask})"
 
 class VF(NetDev):
-    def __init__(self, name, ip=None, netmask=24, mac=None, vlan=None):
-        super().__init__(name, ip, netmask, mac)
+    def __init__(self, if_name, ip=None, netmask=24, mac=None, vlan=None):
+        super().__init__(if_name, ip, netmask, mac)
         self.pf = None
 
     def __str__(self):
-        return f"VF({self.if_name}:{self.ip}/{self.netmask}:{self.mac}:{self.pf})"
+        return f"VF({self.if_name}|{self.ip}/{self.netmask}|{self.mac})"
 
     def __repr__(self):
         return self.__str__()
@@ -33,8 +33,8 @@ class VF(NetDev):
 
 # 创建一个PF类
 class PF(NetDev):
-    def __init__(self, name, ip=None, netmask=24, mac=None):
-        super().__init__(name, ip, netmask, mac)
+    def __init__(self, if_name, ip=None, netmask=24, mac=None):
+        super().__init__(if_name, ip, netmask, mac)
         self.server = None
         self.card = None
         self.vfs = []
@@ -43,7 +43,9 @@ class PF(NetDev):
         return self.__repr__()
 
     def __repr__(self):
-        return f"PF({self.if_name}:{self.card}:{self.server}:{len(self.vfs)}VFs)"
+        if self.ip:
+            return f"PF({self.if_name}|{self.card}:{self.ip}/{self.netmask})"
+        return f"PF({self.if_name}|{self.card})"
 
     def add_vf(self, vf: VF):
         vf.pf = self
@@ -107,7 +109,7 @@ class PF(NetDev):
 
 
 class Card:
-    def __init__(self, name, pfs:[PF]):
+    def __init__(self, name, pfs=[]):
         self.name = name
         self.server = None
         self.pfs = pfs
@@ -116,15 +118,22 @@ class Card:
         return self.__repr__()
 
     def __repr__(self):
-        return f"PF({self.name}:{self.server}:{len(self.pfs)}PFs)"
+        return f"Card({self.name}|{self.server})"
 
     def add_pf(self, pf:PF):
         self.pfs.append(pf)
+        pf.card = self
 
     def add_pfs(self, pfs):
         for pf in pfs:
             self.add_pf(pf)
 
+    def add_pfs_by_num(self, pf_num, intf_start='p2p1',ip_start='1.1.1.1', netmask=24, mac_start='00:00:00:00:00:01'):
+        for i in range(pf_num):
+            intf = f'{intf_start[:-1]}{int(intf_start[-1])+i}'
+            # 希望vf的ip地址是连续的，所以ip地址的最后一位要加1, mac地址也是一样,并且mac地址必须符合规范
+            self.add_pf(PF(f'{intf}', ip=f'{ip_start[:-1]}{int(ip_start[-1])+i}', netmask=netmask,
+                           mac=f'{mac_start[:-2]}{i+int(mac_start[-2]):02x}'))
     def get_pfs(self):
         return self.pfs
 
@@ -139,6 +148,8 @@ class Card:
             return self.pfs[index]
         return None
 
+    def get_server(self):
+        return self.server
 
 
 class Bond:
@@ -186,7 +197,7 @@ class BerylServer(SSHable):
         return self.__repr__()
 
     def __repr__(self):
-        return f"PF({self.ip}:{len(self.cards)}Cards{len(self.pfs)}PFs)"
+        return f'Server({self.ip})'
 
 
     def add_card(self, card: Card):
@@ -275,6 +286,77 @@ class BerylServer(SSHable):
     def add_bonds(self, bonds):
         for bond in bonds:
             self.bonds.append(bond)
+
+
+def create_standard_server(card_num=1, pfs_per_card=2, vfs_per_pf=4):
+    server = BerylServer()
+    for card_index in range(card_num):
+        card = Card(f'card{card_index}')
+        for pf_index in range(pfs_per_card):
+            pf = PF(f'p2p_{pf_index+1}')
+            for vf_index in range(vfs_per_pf):
+                vf = VF(f'p2p_{pf_index+1}_{vf_index}')
+                pf.add_vf(vf)
+            card.add_pf(pf)
+        server.add_card(card)
+    return server
+
+
+from os.path import dirname
+import re,os,munch,inspect,yaml
+
+
+def load_yaml_topo(yaml_file):
+    """This function is to load YAML file as an object
+
+        Args:
+          yaml_file (str): the YAML file name
+
+        Return:
+          YAML object
+
+    """
+
+    with open(yaml_file, 'r') as f:
+        yaml_dict = yaml.safe_load(f)
+    yaml_obj = munch.munchify(yaml_dict)
+
+    return yaml_obj
+
+
+def create_server_by_config(conf: munch.Munch):
+    '''
+    server_conf1:
+      ip: 10.211.3.223
+      user: root
+      password: 123456
+      cards:
+        num: 1
+        type: 25G
+      pfs:
+        pfs_per_card: 2
+        intf_start: p2p1
+        ip_start: 1.1.1.1
+        netmask: 24
+        mac_start: 00:00:00:00:00:01
+      vfs:
+        vfs_per_pf: 2
+        ip_start: 6.6.6.1
+        netmask: 24
+        mac_start: 01:11:00:00:00:01
+
+    '''
+    server = BerylServer(conf.ip, conf.user, conf.password)
+    for card_index in range(conf.cards.num):
+        card = Card(f'card{card_index}')
+        card.add_pfs_by_num(conf.pfs.pfs_per_card, conf.pfs.intf_start, conf.pfs.ip_start, conf.pfs.netmask, conf.pfs.mac_start)
+
+        for pf in card.get_pfs():
+            pf.add_vfs_by_num(conf.vfs.vfs_per_pf, conf.vfs.ip_start, conf.vfs.netmask, conf.vfs.mac_start)
+        server.add_card(card)
+        
+    return server
+
 
 
 
