@@ -65,3 +65,16 @@ def test_hl_flow_cross_node():
 
     server.disconnect()
 
+
+def test_hl_flow_inner_node_1_flow_ping_traverse():
+    topo = load_yaml_topo('./topo.yaml')
+    server = create_server_by_config(topo.server_conf1)
+
+    server.connect()
+    server.perform()
+
+    for size in range(64,1000, 10):
+        flows = create_p2p_flows(server.cards[0].pfs[0].vfs[0], server.cards[0].pfs[1].vfs[0], PingFlowParams(packet_size=size))
+        flows.start()
+
+    server.disconnect()

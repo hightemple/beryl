@@ -30,7 +30,7 @@ class PingFlowParams(FlowParams):
 
 class IperfFlowParams(FlowParams):
     def __init__(self, packet_size=64, duration=3, interval=1, port=None, type='udp'):
-        super().__init__(packet_size=packet_size, duration=duration, interval=1, port=port)
+        super().__init__(packet_size=packet_size, duration=duration, interval=interval, port=port)
         self.type = type
 
 
@@ -72,9 +72,9 @@ class PingFlow(Flow):
         # 生成在tmp下的文件，文件名为flow_时间戳, 时间戳转换为上海时间，且精确到毫秒
         self.log = f'/tmp/flow_{time.strftime(f"%Y%m%d_%H%M%S_{port}", time.localtime())}.log'
 
-        c_iperf_cmd = f'nohup ping {self.s_device.ip} -i {self.params.interval} -s {self.params.packet_size} -c {self.params.duration / self.params.interval}  > {self.log} 2>&1 &'
+        c_iperf_cmd = f'nohup ping {self.s_device.ip} -i {self.params.interval} -s {self.params.packet_size} -c {int(self.params.duration / self.params.interval)}  > {self.log} 2>&1 &'
         # -1, --one-off             handle one client connection then exit
-        s_iperf_cmd = f'nohup ping {self.c_device.ip} -i {self.params.interval} -s {self.params.packet_size} -c {self.params.duration / self.params.interval}  > {self.log} 2>&1 &'
+        s_iperf_cmd = f'nohup ping {self.c_device.ip} -i {self.params.interval} -s {self.params.packet_size} -c {int(self.params.duration / self.params.interval)}  > {self.log} 2>&1 &'
 
         c_server = self.c_device.get_server()
         s_server = self.s_device.get_server()
@@ -89,9 +89,10 @@ class PingFlow(Flow):
 
 
 class IperfFlow(Flow):
-    def __init__(self, c_device, s_device, flow_params: IperfFlowParams, port=None):
+    def __init__(self, c_device, s_device, flow_params: IperfFlowParams, port=None, type='udp'):
         super().__init__(c_device, s_device, port)
         self.params = flow_params
+        self.type = type
 
     def start(self):
 
@@ -104,9 +105,14 @@ class IperfFlow(Flow):
         # 生成在tmp下的文件，文件名为flow_时间戳, 时间戳转换为上海时间，且精确到毫秒
         self.log = f'/tmp/flow_{time.strftime(f"%Y%m%d_%H%M%S_{port}", time.localtime())}.log'
 
-        c_iperf_cmd = f'nohup iperf3 -c {self.s_device.ip} -u -B {self.c_device.ip} -l {self.params.packet_size} -i {self.params.interval} -t {self.params.duration} -p {port} > {self.log} 2>&1 &'
+
+
+        c_iperf_cmd = f'nohup iperf3 -c {self.s_device.ip} -u -B {self.c_device.ip} -l {self.params.packet_size} -i {self.params.interval} -t {self.params.duration} -p {port}  > {self.log} 2>&1 &'
         # -1, --one-off             handle one client connection then exit
         s_iperf_cmd = f'nohup iperf3 -s -u -B {self.s_device.ip} -l {self.params.packet_size} -i {self.params.interval} -t {self.params.duration} -p {port}  -1 > {self.log} 2>&1 &'
+
+
+
 
         c_server = self.c_device.get_server()
         s_server = self.s_device.get_server()
