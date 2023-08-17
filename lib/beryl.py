@@ -13,6 +13,9 @@ class NetDev:
     def __repr__(self):
         return f"NetDev({self.if_name}:{self.ip}/{self.netmask})"
 
+    def get_server(self):
+        pass
+
 class VF(NetDev):
     def __init__(self, if_name, ip=None, netmask=24, mac=None, vlan=None):
         super().__init__(if_name, ip, netmask, mac)
@@ -233,6 +236,10 @@ class BerylServer(SSHable):
 
     def get_pfs(self):
         return self.pfs
+
+    def clear_all_vfs(self):
+        for pf in self.pfs:
+            pf.clear_vfs()
 
 
     def perform(self):
